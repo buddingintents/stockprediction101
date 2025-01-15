@@ -20,20 +20,20 @@ if ticker_symbol:
     stock_data = yf.download(ticker_symbol, start=start_date, end=end_date)
 
     if not stock_data.empty:
+        # Ensure the index is in datetime format
+        stock_data.index = pd.to_datetime(stock_data.index)
+
         # Display stock data
         st.write(f"Stock Data for {ticker_symbol}")
         st.dataframe(stock_data.tail(10))
 
-        # Candlestick Chart for last 30 days
+        # Line Chart with markers for last 30 days
         last_30_days_data = stock_data[-30:]
-        fig = go.Figure(data=[go.Candlestick(
-            x=last_30_days_data.index,
-            open=last_30_days_data['Open'],
-            high=last_30_days_data['High'],
-            low=last_30_days_data['Low'],
-            close=last_30_days_data['Close'],
-            name='Candlestick'
-        )])
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=last_30_days_data.index, y=last_30_days_data['Close'],
+            mode='lines+markers', name='Close Price'
+        ))
 
         # Add SMA lines
         last_30_days_data['SMA_50'] = last_30_days_data['Close'].rolling(window=50).mean()
@@ -41,7 +41,7 @@ if ticker_symbol:
         fig.add_trace(go.Scatter(x=last_30_days_data.index, y=last_30_days_data['SMA_50'], mode='lines', name='SMA 50'))
         fig.add_trace(go.Scatter(x=last_30_days_data.index, y=last_30_days_data['SMA_100'], mode='lines', name='SMA 100'))
 
-        st.write("Candlestick Chart with SMA (50 & 100 Days)")
+        st.write("Line Chart with SMA (50 & 100 Days)")
         st.plotly_chart(fig)
 
         # Compute returns and statistics for last 90 days
@@ -62,6 +62,8 @@ if ticker_symbol:
         stock_data['RSI'] = rsi
 
         st.write("## RSI (Relative Strength Index)")
-        st.line_chart(stock_data['RSI'].dropna())
+        rsi_fig = go.Figure()
+        rsi_fig.add_trace(go.Scatter(x=stock_data.index, y=stock_data['RSI'], mode='lines', name='RSI'))
+        st.plotly_chart(rsi_fig)
     else:
         st.error("No data found for the ticker symbol. Please check the input.")
